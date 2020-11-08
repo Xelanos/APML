@@ -54,7 +54,7 @@ for epoch in range(500):  # loop over the dataset multiple times
         for data in testloader:
             images, labels = data
             outputs = model(images)
-            _, predicted = torch.max(outputs.data, 1)
+            predicted = torch.argmax(outputs.data, dim=1)
             total += labels.size(0)
             correct_test += (predicted == labels).sum().item()
 
