@@ -5,9 +5,12 @@ from torch.utils.data import RandomSampler
 
 
 labels = label_names()
-trainset = get_dataset_as_array()
+dataset = get_dataset_as_torch_dataset()
+
+trainset, testset = torch.utils.data.random_split(dataset, [len(dataset) - 2000, 2000])
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=20, shuffle=True)
+testloader = torch.utils.data.DataLoader(trainset, batch_size=500, shuffle=True)
 
 classes = tuple(labels.values())
 
@@ -19,8 +22,10 @@ optimizer = torch.optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=1e-5)
 
 
 for epoch in range(500):  # loop over the dataset multiple times
+    print(f"EPOCH {epoch}", end='')
 
     running_loss = 0.0
+    correct_train = 0
     for i, data in enumerate(trainloader, 0):
         # get the inputs; data is a list of [inputs, labels]
         inputs, labels = data
@@ -34,12 +39,27 @@ for epoch in range(500):  # loop over the dataset multiple times
         loss.backward()
         optimizer.step()
 
-        # print statistics
+        # collect statistics
         running_loss += loss.item()
-        if i % 200 == 199:    # print every 2000 mini-batches
-            print('[%d, %5d] loss: %.3f' %
-                  (epoch + 1, i + 1, running_loss / 200))
-            running_loss = 0.0
+        _, predicted = torch.max(outputs.data, 1)
+        correct_train += (predicted == labels).sum().item()
+
+    print(" - done")
+    print(f'Average loss is {running_loss / len(trainset):.4f}')
+    print(f'Train accruacy is : {100 * correct_train / len(trainset):.2f}%')
+
+    correct_test = 0
+    total = 0
+    with torch.no_grad():
+        for data in testloader:
+            images, labels = data
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct_test += (predicted == labels).sum().item()
+
+    print(f'Test accruacy is : {100 * correct_test / total:.2f}%')
+    print("")
 
 print('Finished Training')
 
