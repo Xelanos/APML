@@ -1,11 +1,19 @@
 import torch
 from dataset import *
 from models import SimpleModel
+from transforms import AddGaussianNoise
 
-dataset = get_dataset_as_torch_dataset()
+
+datasets = [MyDataset(get_dataset_as_array())]
+
+for _ in range(3):
+    noisey_dataset = MyDataset(get_dataset_as_array(), AddGaussianNoise())
+    datasets.append(noisey_dataset)
 
 
-datasetloader = torch.utils.data.DataLoader(dataset, batch_size=20, shuffle=True)
+dataset = torch.utils.data.ConcatDataset(datasets)
+
+datasetloader = torch.utils.data.DataLoader(dataset, batch_size=50, shuffle=True)
 
 model = SimpleModel()
 checkpoint = torch.load('./data/pre_trained.ckpt')
@@ -20,5 +28,7 @@ with torch.no_grad():
         predicted = torch.argmax(outputs.data, dim=1)
         total += labels.size(0)
         correct_test += (predicted == labels).sum().item()
-
+print(f'total: {total} ')
 print(f'Model Accruacy is : {100 * correct_test / total:.2f}%')
+
+

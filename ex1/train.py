@@ -3,11 +3,12 @@ from models import SimpleModel
 import torch
 from torch.utils.data import RandomSampler
 
+EPOCHS = 120
 
 labels = label_names()
 dataset = get_dataset_as_torch_dataset()
 
-trainset, testset = torch.utils.data.random_split(dataset, [len(dataset) - 2000, 2000])
+trainset, testset = torch.utils.data.random_split(dataset, [len(dataset) - 500, 500])
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=20, shuffle=True)
 testloader = torch.utils.data.DataLoader(trainset, batch_size=500, shuffle=True)
@@ -21,8 +22,8 @@ learning_rate = 1e-4
 optimizer = torch.optim.Adagrad(model.parameters(), lr=1e-2, lr_decay=1e-5)
 
 
-for epoch in range(500):  # loop over the dataset multiple times
-    print(f"EPOCH {epoch}", end='')
+for epoch in range(EPOCHS):  # loop over the dataset multiple times
+    print(f"EPOCH {epoch + 1}/{EPOCHS}", end='')
 
     running_loss = 0.0
     correct_train = 0
@@ -45,8 +46,6 @@ for epoch in range(500):  # loop over the dataset multiple times
         correct_train += (predicted == labels).sum().item()
 
     print(" - done")
-    print(f'Average loss is {running_loss / len(trainset):.4f}')
-    print(f'Train accruacy is : {100 * correct_train / len(trainset):.2f}%')
 
     correct_test = 0
     total = 0
@@ -58,10 +57,25 @@ for epoch in range(500):  # loop over the dataset multiple times
             total += labels.size(0)
             correct_test += (predicted == labels).sum().item()
 
+    print(f'Average loss is {running_loss / len(trainset):.4f}')
+    print(f'Train accruacy is : {100 * correct_train / len(trainset):.2f}%')
     print(f'Test accruacy is : {100 * correct_test / total:.2f}%')
     print("")
 
+    if epoch == EPOCHS - 2:
+        torch.save({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+        }, "data/last_step.ckpt")
+
+
+
 print('Finished Training')
+
+torch.save({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            }, "data/my_model.ckpt")
 
 
 
