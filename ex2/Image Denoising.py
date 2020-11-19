@@ -7,6 +7,8 @@ from weiner import WeinerDenoiseFilter
 from scipy.stats import multivariate_normal
 from skimage.util import view_as_windows as viewW
 
+𝜋 = np.pi
+
 
 def images_example(path='train_images.pickle'):
     """
@@ -261,12 +263,23 @@ def MVN_log_likelihood(X, model):
     Given image patches and a MVN model, return the log likelihood of the patches
     according to the model.
 
+    :type model: MVN_Model
     :param X: a patch_sizeXnumber_of_patches matrix of image patches.
     :param model: A MVN_Model object.
     :return: The log likelihood of all the patches combined.
     """
 
     # TODO: YOUR CODE HERE
+    d, m = np.shape(X)
+    mean, cov = model.mean, model.cov
+
+    x = X - mean  # Subtracting mean
+    ll = -((d * m) / 2) * np.log(2 * 𝜋)
+    ll -= (m / 2) * np.linalg.det(cov)
+    ll += np.sum(x @ np.linalg.inv(cov) @ x.T)
+
+    return ll
+
 
 
 def GSM_log_likelihood(X, model):
@@ -274,6 +287,7 @@ def GSM_log_likelihood(X, model):
     Given image patches and a GSM model, return the log likelihood of the patches
     according to the model.
 
+    :type model: GSM_Model
     :param X: a patch_sizeXnumber_of_patches matrix of image patches.
     :param model: A GSM_Model object.
     :return: The log likelihood of all the patches combined.
@@ -289,6 +303,7 @@ def ICA_log_likelihood(X, model):
 
     :param X: a patch_sizeXnumber_of_patches matrix of image patches.
     :param model: An ICA_Model object.
+    :type model: ICA_Model
     :return: The log likelihood of all the patches combined.
     """
 
@@ -298,6 +313,7 @@ def ICA_log_likelihood(X, model):
 def learn_MVN(X):
     """
     Learn a multivariate normal model, given a matrix of image patches.
+    :rtype: MVN_Model
     :param X: a DxM data matrix, where D is the dimension, and M is the number of samples.
     :return: A trained MVN_Model object.
     """
@@ -315,12 +331,20 @@ def learn_GSM(X, k):
     GSM components share the variance, up to a scaling factor, so we only
     need to learn scaling factors and mixture proportions.
 
+    :rtype: GSM_Model
     :param X: a DxM data matrix, where D is the dimension, and M is the number of samples.
     :param k: The number of components of the GSM model.
     :return: A trained GSM_Model object.
     """
 
     # TODO: YOUR CODE HERE
+    D, M = np.shape(X)
+    random = np.random.randn(k)
+    𝜋_vector = random / np.sum(random)
+    mean_vector = np.random.randn(k)
+    cov_vector = np.random
+
+
 
 
 def learn_ICA(X, k):
@@ -331,6 +355,7 @@ def learn_ICA(X, k):
     And for each of the D coordinates we learn a mixture of K univariate
     0-mean gaussians using EM.
 
+    :rtype: ICA_Model
     :param X: a DxM data matrix, where D is the dimension, and M is the number of samples.
     :param k: The number of components in the source gaussian mixtures.
     :return: A trained ICA_Model object.
