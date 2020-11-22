@@ -28,8 +28,8 @@ def images_example(path='train_images.pickle'):
 
     plt.figure()
     for i in range(4):
-        plt.subplot(2,2,i+1)
-        plt.imshow(patches[:,i].reshape(patch_size), cmap='gray')
+        plt.subplot(2, 2, i + 1)
+        plt.imshow(patches[:, i].reshape(patch_size), cmap='gray')
         plt.title("Patch Example")
     plt.show()
 
@@ -44,7 +44,7 @@ def im2col(A, window, stepsize=1):
     :return: A (heightXwidth)x(NxM) matrix of image patches.
     """
     return viewW(np.ascontiguousarray(A), (window[0], window[1])).reshape(-1,
-                        window[0] * window[1]).T[:, ::stepsize]
+                                                                          window[0] * window[1]).T[:, ::stepsize]
 
 
 def grayscale_and_standardize(images, remove_mean=True):
@@ -189,7 +189,7 @@ def test_denoising(image, model, denoise_function,
     # make the image noisy:
     for i in range(len(noise_range)):
         noisy_images[:, :, i] = image + (
-        noise_range[i] * np.random.randn(h, w))
+                noise_range[i] * np.random.randn(h, w))
 
     # denoise the image:
     for i in range(len(noise_range)):
@@ -222,6 +222,7 @@ class MVN_Model:
     mean - a D sized vector with the mean of the gaussian.
     cov - a D-by-D matrix with the covariance matrix.
     """
+
     def __init__(self, mean, cov):
         self.mean = mean
         self.cov = cov
@@ -236,6 +237,7 @@ class GSM_Model:
         covariance matrices should be scaled versions of each other.
     mix - k-length probability vector for the mixture of the gaussians.
     """
+
     def __init__(self, cov, mix):
         self.cov = cov
         self.mix = mix
@@ -252,6 +254,7 @@ class ICA_Model:
     mix - DxK matrix whose (d,k) element corresponds to the weight of the k'th
         gaussian in d'th source.
     """
+
     def __init__(self, P, vars, mix):
         self.P = P
         self.vars = vars
@@ -269,17 +272,19 @@ def MVN_log_likelihood(X, model):
     :return: The log likelihood of all the patches combined.
     """
 
-    # TODO: YOUR CODE HERE
-    d, m = np.shape(X)
-    mean, cov = model.mean, model.cov
+    # d, m = np.shape(X)
+    # mean, cov = model.mean, model.cov
+    #
+    # x = X - mean  # Subtracting mean
+    # ll = -(0.5 * d * m) * np.log(2 * 𝜋)
+    # ll -= 0.5 * m * np.linalg.det(cov)
+    # ll -= 0.5 * np.sum(x @ np.linalg.inv(cov) @ x.T)
 
-    x = X - mean  # Subtracting mean
-    ll = -((d * m) / 2) * np.log(2 * 𝜋)
-    ll -= (m / 2) * np.linalg.det(cov)
-    ll += np.sum(x @ np.linalg.inv(cov) @ x.T)
+    ll = np.zeros((X.shape[1]))
+    for col in range(X.shape[1]):
+        ll[col] = multivariate_normal.logpdf(X[:, col], model.mean, model.cov)
 
-    return ll
-
+    return logsumexp(ll)
 
 
 def GSM_log_likelihood(X, model):
@@ -317,8 +322,6 @@ def learn_MVN(X):
     :param X: a DxM data matrix, where D is the dimension, and M is the number of samples.
     :return: A trained MVN_Model object.
     """
-
-    # TODO: YOUR CODE HERE
     mean = np.mean(X, 1)
     cov = np.cov(X)
     return MVN_Model(mean, cov)
@@ -343,8 +346,6 @@ def learn_GSM(X, k):
     𝜋_vector = random / np.sum(random)
     mean_vector = np.random.randn(k)
     cov_vector = np.random
-
-
 
 
 def learn_ICA(X, k):
@@ -378,12 +379,9 @@ def MVN_Denoise(Y, mvn_model, noise_std):
     :return: a DxM matrix of denoised image patches.
     """
 
-    # TODO: YOUR CODE HERE
-    mean = np.zeros((mvn_model.cov.shape[0])) # Since we know mean is 0
+    mean = np.zeros((mvn_model.cov.shape[0]))  # Since we know mean is 0
     filter = WeinerDenoiseFilter(mean, mvn_model.cov, noise_std)
     return np.apply_along_axis(filter, 0, Y)
-
-
 
 
 def GSM_Denoise(Y, gsm_model, noise_std):
@@ -428,11 +426,22 @@ if __name__ == '__main__':
     with open('train_images.pickle', 'rb') as f:
         train_pictures = pickle.load(f)
 
+    with open('test_images.pickle', 'rb') as f:
+        test_pictures = pickle.load(f)
+
     patches = sample_patches(train_pictures, psize=patch_size, n=20000)
 
-    model = learn_MVN(patches)
 
-    std_pics = grayscale_and_standardize(train_pictures)
-    test_denoising(std_pics[1], model, MVN_Denoise, patch_size=patch_size, noise_range=(0.3, 0.4, 0.7))
+
+    model = learn_MVN(patches)
+    print('Done training')
+    ll = MVN_log_likelihood(patches, model) / len(patches)
+    print(f'LL is {ll}')
+    #
+    # ll = MVN_log_likelihood(patches, MVN_Model(np.mean(patches), np.cov(patches)))
+    # print(f'LL is {ll}')
+
+    std_pics = grayscale_and_standardize(test_pictures)
+    test_denoising(std_pics[1], model, MVN_Denoise, patch_size=patch_size, noise_range=(0.1, 0.3, 0.7, 0.8))
 
     pass
