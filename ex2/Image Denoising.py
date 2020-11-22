@@ -271,16 +271,6 @@ def MVN_log_likelihood(X, model):
     :param model: A MVN_Model object.
     :return: The log likelihood of all the patches combined.
     """
-
-    # TODO: YOUR CODE HERE
-    # d, m = np.shape(X)
-    # mean, cov = model.mean, model.cov
-    #
-    # x = X - mean  # Subtracting mean
-    # ll = -(0.5 * d * m) * np.log(2 * 𝜋)
-    # ll -= 0.5 * m * np.linalg.det(cov)
-    # ll -= 0.5 * np.sum(x @ np.linalg.inv(cov) @ x.T)
-
     ll = np.zeros((X.shape[1]))
     for col in range(X.shape[1]):
         ll[col] = multivariate_normal.logpdf(X[:, col], model.mean, model.cov)
