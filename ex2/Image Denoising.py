@@ -272,6 +272,7 @@ def MVN_log_likelihood(X, model):
     :return: The log likelihood of all the patches combined.
     """
 
+    # TODO: YOUR CODE HERE
     # d, m = np.shape(X)
     # mean, cov = model.mean, model.cov
     #
