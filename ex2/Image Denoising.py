@@ -335,8 +335,14 @@ def learn_GSM(X, k):
     D, M = np.shape(X)
     random = np.random.randn(k)
     𝜋_vector = random / np.sum(random)
-    mean_vector = np.random.randn(k)
-    cov_vector = np.random
+    means = np.zeros((k , D))
+    covs = np.zeros((k ,D ,D))
+    for i in range(k):
+        means[i] = np.random.randn(k)
+        random_mat = np.rand(D, D)
+        covs[i] = numpy.dot(random_mat, random_mat.T)
+
+
 
 
 def learn_ICA(X, k):
@@ -389,8 +395,20 @@ def GSM_Denoise(Y, gsm_model, noise_std):
     :return: a DxM matrix of denoised image patches.
 
     """
+    D, M = Y.shape
+    k = len(gsm_model.mix)
+    result = np.zeros((D, M))
+    mean = np.zeros(D)
+    filters = [WeinerDenoiseFilter(mean, cov, noise_std) for cov in gsm_model.cov]
+    for col in range(Y.shape[1]):
+        patch = Y[:, col]
+        filterd = np.zeros((k, D))
+        for i, filter in enumerate(filters):
+            filterd[i] = filter(patch) * gsm_model.mix[i]
+        result[:, col] = np.sum(filterd, axis=0)
 
-    # TODO: YOUR CODE HERE
+    return result
+
 
 
 def ICA_Denoise(Y, ica_model, noise_std):
@@ -422,17 +440,18 @@ if __name__ == '__main__':
 
     patches = sample_patches(train_pictures, psize=patch_size, n=20000)
 
-
-
     model = learn_MVN(patches)
+
+    model = GSM_Model(np.expand_dims(model.cov, axis=0), np.ones(1))
+
     print('Done training')
-    ll = MVN_log_likelihood(patches, model) / len(patches)
-    print(f'LL is {ll}')
+    # ll = MVN_log_likelihood(patches, model) / len(patches)
+    # print(f'LL is {ll}')
     #
     # ll = MVN_log_likelihood(patches, MVN_Model(np.mean(patches), np.cov(patches)))
     # print(f'LL is {ll}')
 
     std_pics = grayscale_and_standardize(test_pictures)
-    test_denoising(std_pics[1], model, MVN_Denoise, patch_size=patch_size, noise_range=(0.1, 0.3, 0.7, 0.8))
+    test_denoising(std_pics[1], model, GSM_Denoise, patch_size=patch_size, noise_range=(0.1, 0.3, 0.7, 0.8))
 
     pass
