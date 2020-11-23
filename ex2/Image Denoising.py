@@ -331,18 +331,53 @@ def learn_GSM(X, k):
     :return: A trained GSM_Model object.
     """
 
-    # TODO: YOUR CODE HERE
-    D, M = np.shape(X)
-    random = np.random.randn(k)
-    𝜋_vector = random / np.sum(random)
-    means = np.zeros((k , D))
-    covs = np.zeros((k ,D ,D))
-    for i in range(k):
-        means[i] = np.random.randn(k)
-        random_mat = np.rand(D, D)
-        covs[i] = numpy.dot(random_mat, random_mat.T)
+    # Init variables
+    MAX_ITERS = 50
+    D, N = np.shape(X)
+    random = np.random.rand(k)
+    𝜋 = random / np.sum(random)
+    mean = np.zeros((D))  # Mean is always 0
+    cov = np.cov(X)  # Base covariance is sample covarivance
+    inv_cov = np.linalg.inv(cov)
+    r_squared = np.random.rand(k)
+    covs = np.zeros((k, D, D))
+    for y in range(k):
+        covs[y] = cov * r_squared[y]
+    c = np.zeros((k, N))
+    ll_stats = []
+    iteration = 1
 
+    # EM
+    while iteration < MAX_ITERS:
+        # E-step
+        expected_ll_for_iteration = 0
+        for i in range(N):
+            for y in range(k):
+                log_like = multivariate_normal.logpdf(X[:, i], mean, covs[y])
+                expected_ll_for_iteration += c[y, i] * log_like
+                c[y, i] = log_like + np.log(𝜋[y])
+        c = normalize_log_likelihoods(c)
+        print(f'Finished  E-step {iteration}')
 
+        # M-step
+        c_sum = np.sum(np.exp(c), axis=1)
+        𝜋 = c_sum / N # updating probabilities
+
+            # Updaing  r_squared and covariance mats
+        for y in range(k):
+            new_r = 0
+            for i in range(N):
+                new_r += np.exp(c[y, i]) * (X[:, i].T @ inv_cov @ X[:, i])
+            r_squared[y] = new_r / (D * c_sum[y])
+            covs[y] = cov * r_squared[y]
+        print(f'Finished M-step {iteration}')
+
+        print(f'Done iteration {iteration}')
+        print(f'Expected LL for this iteration: {expected_ll_for_iteration / N}')
+        ll_stats.append(expected_ll_for_iteration / N)
+        iteration += 1
+
+        return GSM_Model(covs, 𝜋)
 
 
 def learn_ICA(X, k):
@@ -410,7 +445,6 @@ def GSM_Denoise(Y, gsm_model, noise_std):
     return result
 
 
-
 def ICA_Denoise(Y, ica_model, noise_std):
     """
     Denoise every column in Y, assuming an ICA model and gaussian white noise.
@@ -440,9 +474,7 @@ if __name__ == '__main__':
 
     patches = sample_patches(train_pictures, psize=patch_size, n=20000)
 
-    model = learn_MVN(patches)
-
-    model = GSM_Model(np.expand_dims(model.cov, axis=0), np.ones(1))
+    model = learn_GSM(patches, 5)
 
     print('Done training')
     # ll = MVN_log_likelihood(patches, model) / len(patches)
