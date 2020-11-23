@@ -377,7 +377,7 @@ def learn_GSM(X, k):
         ll_stats.append(expected_ll_for_iteration / N)
         iteration += 1
 
-        return GSM_Model(covs, 𝜋)
+    return GSM_Model(covs, 𝜋)
 
 
 def learn_ICA(X, k):
